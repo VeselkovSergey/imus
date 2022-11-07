@@ -495,7 +495,6 @@
                     startPointId: startPoint.properties.get('pointId'),
                     endPointId: endPoint.properties.get('pointId')
                 }, (result) => {
-                    console.log(result)
                     polyline.properties.set('lineId', result.id)
                 })
             }
@@ -542,6 +541,13 @@
 
             document.addEventListener('delete-layout', (event) => {
                 if (event.detail.layoutId === polyline.properties.get('layoutId')) {
+                    myMap.geoObjects.remove(polyline);
+                }
+            })
+
+            document.addEventListener('delete-point', (event) => {
+                if (event.detail.pointId === polyline.properties.get('points').startPoint.properties.get('pointId')
+                || event.detail.pointId === polyline.properties.get('points').endPoint.properties.get('pointId')) {
                     myMap.geoObjects.remove(polyline);
                 }
             })
@@ -735,31 +741,15 @@
             requestOnServer("{{route('point.delete')}}", {
                 pointId: currentPoint.properties.get('pointId')
             }, () => {
-                const pointCoordinates = getFixedCoordinates(currentPoint.geometry.getCoordinates())
-
+                document.dispatchEvent(new CustomEvent('delete-point', {
+                    detail: {
+                        pointId: currentPoint.properties.get('pointId')
+                    }
+                }))
                 myMap.geoObjects.remove(currentPoint);
                 lastCoordinates = [];
                 currentPoint = undefined;
                 UpdateLatitudeLongitudeByPoint()
-
-                let freshPolyLinesArr = [];
-                allPolyLines.map((everyPolyline) => {
-                    const coordinates = getFixedCoordinates(everyPolyline.geometry.getCoordinates())
-                    const firstCoordinates = coordinates[0]
-                    const secondCoordinates = coordinates[1]
-
-                    if (
-                        pointCoordinates.isEqual(firstCoordinates)
-                        || pointCoordinates.isEqual(secondCoordinates)
-                        || pointCoordinates.isEqual(firstCoordinates)
-                        || pointCoordinates.isEqual(secondCoordinates)
-                    ) {
-                        myMap.geoObjects.remove(everyPolyline);
-                    } else {
-                        freshPolyLinesArr.push(everyPolyline)
-                    }
-                })
-                allPolyLines = freshPolyLinesArr
             })
         });
 
@@ -770,19 +760,21 @@
                 return
             }
 
-            let freshPolyLinesArr = [];
-            allPolyLines.map((everyPolyline) => {
-                if (!getFixedCoordinates(currentLine.geometry.getCoordinates()).isEqual(getFixedCoordinates(everyPolyline.geometry.getCoordinates()))) {
-                    freshPolyLinesArr.push(everyPolyline)
-                }
-            })
-            allPolyLines = freshPolyLinesArr
-
             requestOnServer("{{route('lines.delete')}}", {
                 lineId: currentLine.properties.get('lineId')
+            }, () => {
+
+                let freshPolyLinesArr = [];
+                allPolyLines.map((everyPolyline) => {
+                    if (currentLine.properties.get('lineId') !== everyPolyline.properties.get('lineId')) {
+                        freshPolyLinesArr.push(everyPolyline)
+                    }
+                })
+                allPolyLines = freshPolyLinesArr
+
+                myMap.geoObjects.remove(currentLine);
+                currentLine = undefined
             })
-            myMap.geoObjects.remove(currentLine);
-            currentLine = undefined
         });
 
         function ShowPointBar() {
