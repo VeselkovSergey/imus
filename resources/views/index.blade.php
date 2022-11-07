@@ -259,7 +259,8 @@
                 attr: {
                     type: 'radio',
                     name: 'layout',
-                    class: 'layout-container'
+                    class: 'layout-container',
+                    "layout-id": layout.id
                 }
             }, layoutLabel);
 
@@ -385,6 +386,7 @@
                 'dragstart'
             ], () => {
                 oldCoordinates = getFixedCoordinates(newPoint.geometry.getCoordinates())
+                document.body.querySelector('[layout-id="'+newPoint.properties.get('layoutId')+'"]').checked = true
             })
 
             newPoint.events.add([
@@ -461,6 +463,9 @@
                 }
 
                 lastCoordinates = clickPointCoordinates
+
+                document.body.querySelector('[layout-id="'+newPoint.properties.get('layoutId')+'"]').checked = true
+
             });
 
             // слушаем нажатие правой кнопки мыши
@@ -592,6 +597,8 @@
                 lineLength.innerHTML = polyline.properties.get('hintContent')
 
                 currentLine = polyline
+
+                document.body.querySelector('[layout-id="'+polyline.properties.get('layoutId')+'"]').checked = true
             });
 
             allPolyLines.push(polyline)
